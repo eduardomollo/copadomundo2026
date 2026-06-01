@@ -1,0 +1,33 @@
+{
+  "expo": {
+    "name": "Copa do Mundo 2026",
+    "slug": "copamundo2026",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "scheme": "copamundo2026",
+    "userInterfaceStyle": "dark",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#0a0e1a"
+    },
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.edtx.worldcup2026",
+      "buildNumber": "1",
+      "infoPlist": {
+        "NSAppTransportSecurity": {
+          "NSAllowsArbitraryLoads": true
+        }
+      }
+    },
+    "plugins": [
+      "expo-router",
+      "react-native-purchases"
+    ],
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}
