@@ -19,15 +19,23 @@
       "infoPlist": {
         "NSAppTransportSecurity": {
           "NSAllowsArbitraryLoads": true
-        }
+        },
+        "ITSAppUsesNonExemptEncryption": false
       }
     },
     "plugins": [
-      "expo-router",
-      "react-native-purchases"
+      "expo-router"
     ],
     "experiments": {
       "typedRoutes": true
+    },
+    "extra": {
+      "router": {
+        "origin": false
+      },
+      "eas": {
+        "projectId": "249f265b-0994-497d-aada-a82157245e63"
+      }
     }
   }
 }
