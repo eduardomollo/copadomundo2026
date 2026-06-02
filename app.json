@@ -16,6 +16,7 @@
       "supportsTablet": false,
       "bundleIdentifier": "com.edtx.worldcup2026",
       "buildNumber": "1",
+      "deploymentTarget": "15.1",
       "infoPlist": {
         "NSAppTransportSecurity": {
           "NSAllowsArbitraryLoads": true
