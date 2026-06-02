@@ -25,7 +25,8 @@
       }
     },
     "plugins": [
-      "expo-router"
+      "expo-router",
+      "react-native-purchases"
     ],
     "experiments": {
       "typedRoutes": true

@@ -1,43 +1,100 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
-  View, Text, ScrollView, TouchableOpacity, Alert, StyleSheet, RefreshControl,
+  View, Text, ScrollView, TouchableOpacity, Alert,
+  StyleSheet, RefreshControl, TextInput, Modal,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors, Radius } from '../../constants/theme';
 import { MatchCard } from '../../components/MatchCard';
 import { useMatches } from '../../hooks/useMatches';
-import { usePredictions, Prediction } from '../../hooks/usePredictions';
 import { checkPremiumStatus, purchasePremium, restorePurchases } from '../../services/purchases';
+import { ensureSignedIn, getDisplayName, setDisplayName } from '../../services/auth';
+import {
+  savePrediction, getUserPredictions, subscribeLeaderboard,
+  Prediction, LeaderboardEntry,
+} from '../../services/predictionsDb';
+import { isConfigured } from '../../services/firebase';
 
-const MOCK_LEADERBOARD = [
-  { name: 'CarlosGOAT', pts: 340, flag: '🇲🇽' },
-  { name: 'SoccerKing99', pts: 290, flag: '🇧🇷' },
-  { name: 'MatchMaster', pts: 275, flag: '🇦🇷' },
-  { name: 'FutbolFan', pts: 210, flag: '🇪🇸' },
-  { name: 'GoalHunter', pts: 180, flag: '🇩🇪' },
-];
+const FREE_LIMIT = 5;
 
 export default function PredictScreen() {
   const { upcomingMatches, loading, refresh } = useMatches();
-  const [isPremium, setIsPremium] = useState(false);
-  const [purchasing, setPurchasing] = useState(false);
-  const { predictions, totalPoints, predictionCount, correctCount, freeLimit, makePrediction, canPredict } =
-    usePredictions(isPremium);
 
+  const [userId, setUserId]             = useState<string | null>(null);
+  const [displayName, setName]          = useState('');
+  const [isPremium, setIsPremium]       = useState(false);
+  const [purchasing, setPurchasing]     = useState(false);
+  const [predictions, setPredictions]   = useState<Record<number, Prediction>>({});
+  const [leaderboard, setLeaderboard]   = useState<LeaderboardEntry[]>([]);
+  const [totalPoints, setTotalPoints]   = useState(0);
+  const [showNameModal, setShowNameModal] = useState(false);
+  const [nameInput, setNameInput]       = useState('');
+  const unsubRef = useRef<() => void>(() => {});
+
+  // ── Init ─────────────────────────────────────────────────────────────────
   useEffect(() => {
-    checkPremiumStatus().then(setIsPremium);
+    (async () => {
+      const user = await ensureSignedIn();
+      const uid  = user?.uid ?? 'local_user';
+      setUserId(uid);
+
+      const name = await getDisplayName();
+      setName(name);
+
+      const premium = await checkPremiumStatus();
+      setIsPremium(premium);
+
+      // Load existing predictions
+      const preds = await getUserPredictions(uid);
+      const map: Record<number, Prediction> = {};
+      let pts = 0;
+      for (const p of preds) {
+        map[p.matchId] = p;
+        pts += p.points ?? 0;
+      }
+      setPredictions(map);
+      setTotalPoints(pts);
+
+      // Subscribe to leaderboard
+      unsubRef.current = subscribeLeaderboard((entries) => {
+        setLeaderboard(entries);
+      }, uid);
+    })();
+    return () => unsubRef.current?.();
   }, []);
 
-  const handlePredict = async (matchId: number, pick: Prediction) => {
-    const result = await makePrediction(matchId, pick);
-    if (!result.success && result.reason) {
-      Alert.alert('Upgrade to Premium', result.reason, [
-        { text: 'Not now', style: 'cancel' },
-        { text: 'Upgrade $4.99/mo', onPress: handlePurchase },
-      ]);
-    }
-  };
+  // ── Prediction count ─────────────────────────────────────────────────────
+  const predictionCount = Object.keys(predictions).length;
+  const correctCount    = Object.values(predictions).filter(p => p.points > 0).length;
 
+  // ── Make pick ────────────────────────────────────────────────────────────
+  const handlePredict = useCallback(async (matchId: number, pick: 'home' | 'draw' | 'away') => {
+    if (!userId) return;
+
+    if (!isPremium && !predictions[matchId] && predictionCount >= FREE_LIMIT) {
+      Alert.alert(
+        '🏆 Upgrade to Premium',
+        `Free plan allows ${FREE_LIMIT} predictions. Upgrade for unlimited picks + leaderboard prizes.`,
+        [
+          { text: 'Not now', style: 'cancel' },
+          { text: 'Upgrade $4.99/mo', onPress: handlePurchase },
+        ],
+      );
+      return;
+    }
+
+    try {
+      await savePrediction(userId, displayName, matchId, pick);
+      setPredictions(prev => ({
+        ...prev,
+        [matchId]: { userId, matchId, pick, points: 0 },
+      }));
+    } catch (e) {
+      Alert.alert('Error', 'Could not save prediction. Please try again.');
+    }
+  }, [userId, displayName, isPremium, predictions, predictionCount]);
+
+  // ── Purchase ─────────────────────────────────────────────────────────────
   const handlePurchase = async () => {
     setPurchasing(true);
     try {
@@ -47,7 +104,7 @@ export default function PredictScreen() {
         Alert.alert('🏆 Welcome to Premium!', 'Unlimited predictions unlocked.');
       }
     } catch (e: any) {
-      Alert.alert('Purchase failed', e.message);
+      Alert.alert('Purchase failed', e.message ?? 'Please try again.');
     } finally {
       setPurchasing(false);
     }
@@ -63,10 +120,17 @@ export default function PredictScreen() {
     }
   };
 
-  const leaderboard = [
-    { name: 'You', pts: totalPoints, flag: '⭐', isUser: true },
-    ...MOCK_LEADERBOARD,
-  ].sort((a, b) => b.pts - a.pts);
+  const handleSetName = async () => {
+    if (!nameInput.trim()) return;
+    await setDisplayName(nameInput.trim());
+    setName(nameInput.trim());
+    setShowNameModal(false);
+  };
+
+  // ── Sort leaderboard with current user always visible ────────────────────
+  const sortedBoard = [...leaderboard].sort((a, b) => b.totalPoints - a.totalPoints);
+  const myEntry = sortedBoard.find(e => e.isCurrentUser);
+  const myRank  = sortedBoard.findIndex(e => e.isCurrentUser) + 1;
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
@@ -92,22 +156,27 @@ export default function PredictScreen() {
               <Text style={styles.statPillLabel}>correct</Text>
             </View>
           </View>
-          {isPremium && (
-            <View style={styles.premiumBadge}>
-              <Text style={styles.premiumBadgeText}>⭐ Premium</Text>
-            </View>
-          )}
+          <View style={{ alignItems: 'flex-end', gap: 6 }}>
+            {isPremium && (
+              <View style={styles.premiumBadge}>
+                <Text style={styles.premiumBadgeText}>⭐ Premium</Text>
+              </View>
+            )}
+            <TouchableOpacity onPress={() => { setNameInput(displayName); setShowNameModal(true); }}>
+              <Text style={styles.nameBtn}>✏️ {displayName || 'Set name'}</Text>
+            </TouchableOpacity>
+          </View>
         </View>
 
-        {/* Free tier progress */}
+        {/* Free limit bar */}
         {!isPremium && (
-          <View style={styles.freeProgress}>
-            <View style={styles.freeProgressRow}>
-              <Text style={styles.freeProgressText}>Free picks used: {predictionCount}/{freeLimit}</Text>
-              <Text style={styles.freeProgressText}>{freeLimit - predictionCount} remaining</Text>
+          <View style={styles.freeBar}>
+            <View style={styles.freeBarRow}>
+              <Text style={styles.freeBarText}>Free picks: {predictionCount}/{FREE_LIMIT}</Text>
+              <Text style={styles.freeBarText}>{Math.max(0, FREE_LIMIT - predictionCount)} left</Text>
             </View>
-            <View style={styles.progressBar}>
-              <View style={[styles.progressFill, { width: `${(predictionCount / freeLimit) * 100}%` }]} />
+            <View style={styles.progressTrack}>
+              <View style={[styles.progressFill, { width: `${Math.min(100, (predictionCount / FREE_LIMIT) * 100)}%` }]} />
             </View>
           </View>
         )}
@@ -118,7 +187,7 @@ export default function PredictScreen() {
             <Text style={styles.upsellEmoji}>🏆</Text>
             <Text style={styles.upsellTitle}>Go Premium</Text>
             <Text style={styles.upsellDesc}>
-              Unlimited predictions · Expert tips before every match · Leaderboard prizes up to $500
+              Unlimited predictions · Expert pre-match tips · Real leaderboard prizes up to $500
             </Text>
             <View style={styles.prizeRow}>
               {['🥇 $500', '🥈 $200', '🥉 $100'].map(p => (
@@ -127,13 +196,9 @@ export default function PredictScreen() {
                 </View>
               ))}
             </View>
-            <TouchableOpacity
-              style={styles.upgradeBtn}
-              onPress={handlePurchase}
-              disabled={purchasing}
-            >
+            <TouchableOpacity style={styles.upgradeBtn} onPress={handlePurchase} disabled={purchasing}>
               <Text style={styles.upgradeBtnText}>
-                {purchasing ? 'Processing...' : 'Upgrade — $4.99/month'}
+                {purchasing ? 'Processing…' : 'Upgrade — $4.99/month'}
               </Text>
             </TouchableOpacity>
             <TouchableOpacity onPress={handleRestore}>
@@ -143,30 +208,45 @@ export default function PredictScreen() {
         )}
 
         {/* Leaderboard */}
-        <Text style={styles.sectionTitle}>Leaderboard</Text>
+        <Text style={styles.sectionTitle}>
+          🌍 Global Leaderboard {!isConfigured && '(preview)'}
+        </Text>
         <View style={styles.leaderboard}>
-          {leaderboard.map((player, i) => (
+          {sortedBoard.slice(0, 10).map((player, i) => (
             <View
-              key={player.name}
-              style={[styles.leaderRow, player.isUser && styles.leaderRowUser, i > 0 && styles.leaderBorder]}
+              key={player.userId}
+              style={[styles.leaderRow, player.isCurrentUser && styles.leaderRowMe, i > 0 && styles.leaderBorder]}
             >
               <View style={[styles.rankBadge, i < 3 && styles.rankTop]}>
                 <Text style={[styles.rankText, i < 3 && styles.rankTopText]}>{i + 1}</Text>
               </View>
-              <Text style={styles.leaderFlag}>{player.flag}</Text>
-              <Text style={[styles.leaderName, player.isUser && { fontWeight: '700' }]}>
-                {player.name}
+              <Text style={styles.leaderName} numberOfLines={1}>
+                {player.displayName}{player.isCurrentUser ? ' 👤' : ''}
               </Text>
+              <Text style={styles.leaderPicks}>{player.predictionCount} picks</Text>
               <View style={styles.ptsBadge}>
-                <Text style={styles.ptsBadgeText}>{player.pts} pts</Text>
+                <Text style={styles.ptsBadgeText}>{player.totalPoints} pts</Text>
               </View>
             </View>
           ))}
+          {/* Show current user if outside top 10 */}
+          {myEntry && myRank > 10 && (
+            <View style={[styles.leaderRow, styles.leaderRowMe, styles.leaderBorder]}>
+              <View style={styles.rankBadge}>
+                <Text style={styles.rankText}>{myRank}</Text>
+              </View>
+              <Text style={styles.leaderName}>{myEntry.displayName} 👤</Text>
+              <Text style={styles.leaderPicks}>{myEntry.predictionCount} picks</Text>
+              <View style={styles.ptsBadge}>
+                <Text style={styles.ptsBadgeText}>{myEntry.totalPoints} pts</Text>
+              </View>
+            </View>
+          )}
         </View>
 
-        {/* Picks */}
+        {/* Match picks */}
         <Text style={styles.sectionTitle}>Make Your Picks</Text>
-        {upcomingMatches.slice(0, 15).map(m => (
+        {upcomingMatches.slice(0, 20).map(m => (
           <MatchCard
             key={m.id}
             match={m}
@@ -176,6 +256,30 @@ export default function PredictScreen() {
           />
         ))}
       </ScrollView>
+
+      {/* Display name modal */}
+      <Modal visible={showNameModal} transparent animationType="fade">
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalCard}>
+            <Text style={styles.modalTitle}>Your leaderboard name</Text>
+            <TextInput
+              style={styles.nameInput}
+              value={nameInput}
+              onChangeText={setNameInput}
+              placeholder="Enter your name"
+              placeholderTextColor={Colors.textMuted}
+              maxLength={20}
+              autoFocus
+            />
+            <TouchableOpacity style={styles.modalBtn} onPress={handleSetName}>
+              <Text style={styles.modalBtnText}>Save</Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => setShowNameModal(false)}>
+              <Text style={styles.restoreText}>Cancel</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -187,141 +291,117 @@ const styles = StyleSheet.create({
 
   pointsBanner: {
     backgroundColor: Colors.surface,
-    borderRadius: Radius.md,
-    padding: 16,
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 10,
-    borderWidth: 1,
+    borderRadius: Radius.md, padding: 16,
+    flexDirection: 'row', alignItems: 'center',
+    marginBottom: 10, borderWidth: 1,
     borderColor: 'rgba(245,158,11,0.25)',
   },
   pointsLabel: { color: Colors.textSecondary, fontSize: 12 },
-  pointsNum: { color: Colors.gold, fontSize: 36, fontWeight: '800' },
-  statsRight: { flex: 1, flexDirection: 'row', justifyContent: 'center', gap: 10 },
+  pointsNum:   { color: Colors.gold, fontSize: 36, fontWeight: '800' },
+  statsRight:  { flex: 1, flexDirection: 'row', justifyContent: 'center', gap: 10 },
   statPill: {
-    backgroundColor: Colors.background,
-    borderRadius: Radius.sm,
-    padding: 8,
-    alignItems: 'center',
-    minWidth: 48,
+    backgroundColor: Colors.background, borderRadius: Radius.sm,
+    padding: 8, alignItems: 'center', minWidth: 48,
   },
-  statPillNum: { color: '#fff', fontSize: 18, fontWeight: '800' },
+  statPillNum:   { color: '#fff', fontSize: 18, fontWeight: '800' },
   statPillLabel: { color: Colors.textMuted, fontSize: 10 },
   premiumBadge: {
-    backgroundColor: Colors.goldDim,
-    borderRadius: Radius.full,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
+    backgroundColor: Colors.goldDim, borderRadius: Radius.full,
+    paddingHorizontal: 10, paddingVertical: 4,
   },
   premiumBadgeText: { color: Colors.gold, fontSize: 11, fontWeight: '700' },
+  nameBtn: { color: Colors.blueLight, fontSize: 12 },
 
-  freeProgress: {
-    backgroundColor: Colors.surface,
-    borderRadius: Radius.md,
-    padding: 12,
-    marginBottom: 10,
-    borderWidth: 1,
-    borderColor: Colors.border,
+  freeBar: {
+    backgroundColor: Colors.surface, borderRadius: Radius.md,
+    padding: 12, marginBottom: 10,
+    borderWidth: 1, borderColor: Colors.border,
   },
-  freeProgressRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 8,
+  freeBarRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 },
+  freeBarText: { color: Colors.textSecondary, fontSize: 12 },
+  progressTrack: {
+    height: 4, backgroundColor: Colors.border,
+    borderRadius: 2, overflow: 'hidden',
   },
-  freeProgressText: { color: Colors.textSecondary, fontSize: 12 },
-  progressBar: {
-    height: 4,
-    backgroundColor: Colors.border,
-    borderRadius: 2,
-    overflow: 'hidden',
-  },
-  progressFill: {
-    height: '100%',
-    backgroundColor: Colors.blue,
-    borderRadius: 2,
-  },
+  progressFill: { height: '100%', backgroundColor: Colors.blue, borderRadius: 2 },
 
   upsellCard: {
-    backgroundColor: Colors.surfaceAlt,
-    borderRadius: Radius.md,
-    padding: 20,
-    marginBottom: 16,
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: Colors.borderBlue,
+    backgroundColor: Colors.surfaceAlt, borderRadius: Radius.md,
+    padding: 20, marginBottom: 16, alignItems: 'center',
+    borderWidth: 1, borderColor: Colors.borderBlue,
   },
   upsellEmoji: { fontSize: 32, marginBottom: 6 },
   upsellTitle: { fontSize: 18, fontWeight: '800', color: '#fff', marginBottom: 6 },
   upsellDesc: {
-    color: Colors.textSecondary,
-    fontSize: 13,
-    textAlign: 'center',
-    lineHeight: 20,
-    marginBottom: 14,
+    color: Colors.textSecondary, fontSize: 13,
+    textAlign: 'center', lineHeight: 20, marginBottom: 14,
   },
-  prizeRow: { flexDirection: 'row', gap: 8, marginBottom: 16 },
-  prizePill: {
-    backgroundColor: Colors.background,
-    borderRadius: Radius.sm,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
+  prizeRow:   { flexDirection: 'row', gap: 8, marginBottom: 16 },
+  prizePill:  {
+    flex: 1, backgroundColor: Colors.background,
+    borderRadius: Radius.sm, padding: 8, alignItems: 'center',
   },
   prizePillText: { color: '#fff', fontSize: 12, fontWeight: '600' },
   upgradeBtn: {
-    backgroundColor: Colors.gold,
-    borderRadius: Radius.md,
-    paddingVertical: 14,
-    paddingHorizontal: 24,
-    width: '100%',
-    alignItems: 'center',
-    marginBottom: 8,
+    backgroundColor: Colors.gold, borderRadius: Radius.md,
+    paddingVertical: 14, paddingHorizontal: 24,
+    width: '100%', alignItems: 'center', marginBottom: 8,
   },
   upgradeBtnText: { color: '#000', fontWeight: '700', fontSize: 15 },
-  restoreText: { color: Colors.textMuted, fontSize: 12, marginTop: 4 },
+  restoreText:    { color: Colors.textMuted, fontSize: 12, marginTop: 4 },
 
   sectionTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: Colors.text,
-    marginBottom: 10,
-    marginTop: 4,
+    fontSize: 16, fontWeight: '700',
+    color: Colors.text, marginBottom: 10, marginTop: 4,
   },
-
   leaderboard: {
-    backgroundColor: Colors.surface,
-    borderRadius: Radius.md,
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: Colors.border,
+    backgroundColor: Colors.surface, borderRadius: Radius.md,
+    marginBottom: 16, borderWidth: 1, borderColor: Colors.border,
     overflow: 'hidden',
   },
   leaderRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    gap: 10,
+    flexDirection: 'row', alignItems: 'center',
+    paddingHorizontal: 14, paddingVertical: 12, gap: 10,
   },
   leaderBorder: { borderTopWidth: 1, borderTopColor: Colors.border },
-  leaderRowUser: { backgroundColor: Colors.goldDim },
+  leaderRowMe:  { backgroundColor: Colors.goldDim },
   rankBadge: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
+    width: 28, height: 28, borderRadius: 14,
     backgroundColor: Colors.background,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: 'center', justifyContent: 'center',
   },
-  rankTop: { backgroundColor: Colors.gold },
-  rankText: { color: Colors.textMuted, fontSize: 12, fontWeight: '700' },
+  rankTop:     { backgroundColor: Colors.gold },
+  rankText:    { color: Colors.textMuted, fontSize: 12, fontWeight: '700' },
   rankTopText: { color: '#000' },
-  leaderFlag: { fontSize: 20 },
-  leaderName: { flex: 1, color: Colors.text, fontSize: 13 },
+  leaderName:  { flex: 1, color: Colors.text, fontSize: 13, fontWeight: '500' },
+  leaderPicks: { color: Colors.textMuted, fontSize: 11 },
   ptsBadge: {
-    backgroundColor: Colors.goldDim,
-    borderRadius: Radius.full,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
+    backgroundColor: Colors.goldDim, borderRadius: Radius.full,
+    paddingHorizontal: 10, paddingVertical: 4,
   },
   ptsBadgeText: { color: Colors.gold, fontSize: 12, fontWeight: '700' },
+
+  // Name modal
+  modalOverlay: {
+    flex: 1, backgroundColor: 'rgba(0,0,0,0.7)',
+    alignItems: 'center', justifyContent: 'center',
+  },
+  modalCard: {
+    backgroundColor: Colors.surface, borderRadius: Radius.lg,
+    padding: 24, width: '80%', alignItems: 'center',
+    borderWidth: 1, borderColor: Colors.border,
+  },
+  modalTitle: { color: '#fff', fontSize: 16, fontWeight: '700', marginBottom: 16 },
+  nameInput: {
+    backgroundColor: Colors.background, color: '#fff',
+    borderRadius: Radius.sm, padding: 12, width: '100%',
+    fontSize: 16, marginBottom: 16,
+    borderWidth: 1, borderColor: Colors.border,
+  },
+  modalBtn: {
+    backgroundColor: Colors.blue, borderRadius: Radius.md,
+    paddingVertical: 12, paddingHorizontal: 32,
+    marginBottom: 12,
+  },
+  modalBtnText: { color: '#fff', fontWeight: '700', fontSize: 15 },
 });

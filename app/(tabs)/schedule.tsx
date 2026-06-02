@@ -37,43 +37,47 @@ export default function ScheduleScreen() {
         )}
       </View>
 
-      {/* Status filter */}
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.filterBar}
-      >
-        {STATUS_FILTERS.map(f => (
-          <TouchableOpacity
-            key={f}
-            style={[styles.filterBtn, statusFilter === f && styles.filterBtnActive]}
-            onPress={() => setStatusFilter(f)}
-          >
-            <Text style={[styles.filterText, statusFilter === f && styles.filterTextActive]}>
-              {f}
-            </Text>
-          </TouchableOpacity>
-        ))}
-      </ScrollView>
+      {/* Status filter — fixed height wrapper prevents stretch */}
+      <View style={styles.filterRow}>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.filterBar}
+        >
+          {STATUS_FILTERS.map(f => (
+            <TouchableOpacity
+              key={f}
+              style={[styles.filterBtn, statusFilter === f && styles.filterBtnActive]}
+              onPress={() => setStatusFilter(f)}
+            >
+              <Text style={[styles.filterText, statusFilter === f && styles.filterTextActive]}>
+                {f}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+      </View>
 
-      {/* Group filter */}
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.filterBar}
-      >
-        {GROUP_FILTERS.map(g => (
-          <TouchableOpacity
-            key={g}
-            style={[styles.filterBtn, groupFilter === g && styles.filterBtnActive]}
-            onPress={() => setGroupFilter(g)}
-          >
-            <Text style={[styles.filterText, groupFilter === g && styles.filterTextActive]}>
-              {g === 'All' ? 'All Groups' : `Grp ${g}`}
-            </Text>
-          </TouchableOpacity>
-        ))}
-      </ScrollView>
+      {/* Group filter — fixed height wrapper */}
+      <View style={styles.filterRow}>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.filterBar}
+        >
+          {GROUP_FILTERS.map(g => (
+            <TouchableOpacity
+              key={g}
+              style={[styles.filterBtn, groupFilter === g && styles.filterBtnActive]}
+              onPress={() => setGroupFilter(g)}
+            >
+              <Text style={[styles.filterText, groupFilter === g && styles.filterTextActive]}>
+                {g === 'All' ? 'All Groups' : `Grp ${g}`}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+      </View>
 
       {/* Matches */}
       <ScrollView
@@ -111,9 +115,13 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
   },
   livePillText: { color: '#fff', fontSize: 12, fontWeight: '700' },
+  // Key fix: explicit height stops the ScrollView from stretching
+  filterRow: {
+    height: 48,
+    justifyContent: 'center',
+  },
   filterBar: {
     paddingHorizontal: 12,
-    paddingVertical: 8,
     gap: 6,
     alignItems: 'center',
     flexDirection: 'row',
