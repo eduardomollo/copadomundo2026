@@ -111,13 +111,21 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
   },
   livePillText: { color: '#fff', fontSize: 12, fontWeight: '700' },
-  filterBar: { paddingHorizontal: 12, paddingVertical: 8, gap: 6 },
+  filterBar: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    gap: 6,
+    alignItems: 'center',
+    flexDirection: 'row',
+  },
   filterBtn: {
+    height: 32,
     paddingHorizontal: 14,
-    paddingVertical: 6,
     borderRadius: Radius.full,
     borderWidth: 1,
     borderColor: Colors.border,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   filterBtnActive: {
     borderColor: Colors.blue,

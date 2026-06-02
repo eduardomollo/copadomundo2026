@@ -132,14 +132,20 @@ export const TOURNAMENT_FAVORITES = [
   { team: 'Portugal', flag: '🇵🇹', odds: '10/1', group: 'K' },
 ];
 
+// ── AFFILIATE LINKS ──────────────────────────────────────────────────────────
+// Replace these URLs with your personal affiliate tracking links once approved:
+//   Fanatics: https://www.fanatics.com/affiliate  (8-12% commission)
+//   FIFA Store via Awin: https://www.awin.com → search "FIFA" (5-8%)
+// The UTM params below help track traffic even before you have affiliate links.
+
 export const MERCHANDISE = [
   {
     id: 'ball',
     name: 'Official Match Ball',
     price: '$149',
     emoji: '⚽',
-    description: 'Adidas Al Rihla Pro — official match ball',
-    url: 'https://www.fifa.com/store',
+    description: 'Adidas official 2026 World Cup match ball',
+    url: 'https://www.adidas.com/us/soccer-world-cup?utm_source=copamundo2026&utm_medium=app',
     commission: '8%',
   },
   {
@@ -147,26 +153,26 @@ export const MERCHANDISE = [
     name: 'Team Jerseys',
     price: 'From $89',
     emoji: '👕',
-    description: 'Official Adidas national team jerseys',
-    url: 'https://www.fanatics.com/soccer/world-cup',
+    description: 'Official national team jerseys — all 48 teams',
+    url: 'https://www.fanatics.com/soccer/national-teams?utm_source=copamundo2026&utm_medium=app',
     commission: '10%',
   },
   {
     id: 'tickets',
-    name: 'VIP Match Tickets',
+    name: 'Match Tickets',
     price: 'From $299',
     emoji: '🎟️',
-    description: 'Group stage to final — all venues',
-    url: 'https://www.fifa.com/tickets',
+    description: 'Group stage to final — all 16 venues',
+    url: 'https://www.fifa.com/en/tournaments/mens/worldcup/canadamexicousa2026/tickets?utm_source=copamundo2026',
     commission: '5%',
   },
   {
     id: 'bundle',
-    name: 'Fan Pack Bundle',
+    name: 'Fan Bundle',
     price: '$59',
     emoji: '🎁',
-    description: 'Scarf + flag + pennant — official gear',
-    url: 'https://www.fanatics.com/soccer/world-cup',
+    description: 'Scarf + flag + cap — official 2026 gear',
+    url: 'https://www.fanatics.com/soccer/world-cup?utm_source=copamundo2026&utm_medium=app',
     commission: '12%',
   },
 ];
