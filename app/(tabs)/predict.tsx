@@ -8,7 +8,7 @@ import { Colors, Radius } from '../../constants/theme';
 import { MatchCard } from '../../components/MatchCard';
 import { useMatches } from '../../hooks/useMatches';
 import { checkPremiumStatus, purchasePremium, restorePurchases } from '../../services/purchases';
-import { ensureSignedIn, getDisplayName, setDisplayName } from '../../services/auth';
+import { getUserId, getDisplayName, setDisplayName } from '../../services/auth';
 import {
   savePrediction, getUserPredictions, subscribeLeaderboard,
   Prediction, LeaderboardEntry,
@@ -34,8 +34,7 @@ export default function PredictScreen() {
   // ── Init ─────────────────────────────────────────────────────────────────
   useEffect(() => {
     (async () => {
-      const user = await ensureSignedIn();
-      const uid  = user?.uid ?? 'local_user';
+      const uid = await getUserId();
       setUserId(uid);
 
       const name = await getDisplayName();

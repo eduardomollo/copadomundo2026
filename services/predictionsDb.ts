@@ -25,7 +25,10 @@ import {
   writeBatch,
 } from 'firebase/firestore';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { db, isConfigured } from './firebase';
+import { db } from './firebase';
+
+// db is null if Firebase failed to init — all functions fall back to local storage
+const isConfigured = db !== null;
 
 export type Prediction = {
   userId: string;
