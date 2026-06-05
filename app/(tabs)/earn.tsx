@@ -1,23 +1,69 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
-  View, Text, ScrollView, TouchableOpacity, StyleSheet, Linking, Alert,
+  View, Text, ScrollView, TouchableOpacity,
+  StyleSheet, Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as WebBrowser from 'expo-web-browser';
 import { Colors, Radius } from '../../constants/theme';
-import { MERCHANDISE } from '../../constants/data';
+import { SHOP_ITEMS, SHOP_CATEGORIES, ShopCategory, ShopItem } from '../../constants/shop';
 
-async function openLink(url: string, title: string) {
+async function openLink(url: string) {
   try {
     await WebBrowser.openBrowserAsync(url, {
       presentationStyle: WebBrowser.WebBrowserPresentationStyle.FORM_SHEET,
+      toolbarColor: '#0D1B3E',
     });
   } catch {
-    Alert.alert('Could not open link', `Please visit ${url} directly.`);
+    Alert.alert('Could not open link');
   }
 }
 
-export default function EarnScreen() {
+const BADGE_COLORS: Record<string, string> = {
+  HOT:      '#ef4444',
+  NEW:      '#3b82f6',
+  SALE:     '#22c55e',
+  OFFICIAL: '#f59e0b',
+  RARE:     '#a855f7',
+};
+
+function ShopCard({ item }: { item: ShopItem }) {
+  return (
+    <TouchableOpacity style={styles.card} onPress={() => openLink(item.url)} activeOpacity={0.75}>
+      {item.badge && (
+        <View style={[styles.badge, { backgroundColor: BADGE_COLORS[item.badge] ?? Colors.blue }]}>
+          <Text style={styles.badgeText}>{item.badge}</Text>
+        </View>
+      )}
+      <Text style={styles.cardEmoji}>{item.emoji}</Text>
+      <Text style={styles.cardName} numberOfLines={2}>{item.name}</Text>
+      <Text style={styles.cardDesc} numberOfLines={2}>{item.description}</Text>
+      <View style={styles.cardFooter}>
+        <View>
+          <Text style={styles.cardPrice}>{item.price}</Text>
+          {item.originalPrice && (
+            <Text style={styles.cardOriginal}>{item.originalPrice}</Text>
+          )}
+        </View>
+        <View style={styles.shopBtn}>
+          <Text style={styles.shopBtnText}>Shop →</Text>
+        </View>
+      </View>
+      <Text style={styles.storeName}>{item.store}</Text>
+    </TouchableOpacity>
+  );
+}
+
+export default function ShopScreen() {
+  const [category, setCategory] = useState<ShopCategory>('All');
+
+  const filtered = category === 'All'
+    ? SHOP_ITEMS
+    : SHOP_ITEMS.filter(i => i.category === category);
+
+  // Feature the first HOT or NEW item for the banner
+  const featured = SHOP_ITEMS.find(i => i.badge === 'HOT') ?? SHOP_ITEMS[0];
+
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
       <ScrollView
@@ -25,94 +71,65 @@ export default function EarnScreen() {
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
       >
-        <Text style={styles.header}>Shop & Earn</Text>
+        <Text style={styles.header}>Shop</Text>
 
-        {/* Premium prediction prizes — recap */}
-        <View style={styles.heroCard}>
-          <Text style={styles.heroEmoji}>🏆</Text>
-          <Text style={styles.heroTitle}>Prediction Prizes</Text>
-          <Text style={styles.heroDesc}>
-            Top predictors win real prizes every round. Upgrade to Premium for unlimited picks,
-            expert tips, and bonus point multipliers.
-          </Text>
-          <View style={styles.prizeRow}>
-            {[
-              { rank: '🥇', label: '1st place', prize: '$500' },
-              { rank: '🥈', label: '2nd place', prize: '$200' },
-              { rank: '🥉', label: '3rd place', prize: '$100' },
-            ].map(p => (
-              <View key={p.rank} style={styles.prizeCard}>
-                <Text style={styles.prizeRank}>{p.rank}</Text>
-                <Text style={styles.prizeLabel}>{p.label}</Text>
-                <Text style={styles.prizeAmount}>{p.prize}</Text>
+        {/* Featured item banner */}
+        <TouchableOpacity style={styles.featured} onPress={() => openLink(featured.url)} activeOpacity={0.85}>
+          <View style={styles.featuredLeft}>
+            <View style={styles.featuredBadge}>
+              <Text style={styles.featuredBadgeText}>⭐ FEATURED</Text>
+            </View>
+            <Text style={styles.featuredName}>{featured.name}</Text>
+            <Text style={styles.featuredDesc} numberOfLines={2}>{featured.description}</Text>
+            <View style={styles.featuredCta}>
+              <Text style={styles.featuredPrice}>{featured.price}</Text>
+              <View style={styles.featuredBtn}>
+                <Text style={styles.featuredBtnText}>Shop Now</Text>
               </View>
-            ))}
+            </View>
           </View>
-          <TouchableOpacity
-            style={styles.ctaBtn}
-            onPress={() => Alert.alert('Premium', 'Go to the Predict tab to upgrade!')}
-          >
-            <Text style={styles.ctaBtnText}>Join Predictions →</Text>
-          </TouchableOpacity>
-        </View>
+          <Text style={styles.featuredEmoji}>{featured.emoji}</Text>
+        </TouchableOpacity>
 
-        {/* Official Merchandise */}
-        <Text style={styles.sectionTitle}>Official Merchandise</Text>
-        <Text style={styles.sectionSub}>
-          Authentic gear from FIFA Store & Fanatics. Free shipping on orders over $75.
-        </Text>
-
-        <View style={styles.grid}>
-          {MERCHANDISE.map(item => (
+        {/* Category filter */}
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.catBar}
+        >
+          {SHOP_CATEGORIES.map(cat => (
             <TouchableOpacity
-              key={item.id}
-              style={styles.merch}
-              onPress={() => openLink(item.url, item.name)}
-              activeOpacity={0.75}
+              key={cat}
+              style={[styles.catBtn, category === cat && styles.catBtnActive]}
+              onPress={() => setCategory(cat)}
             >
-              <Text style={styles.merchEmoji}>{item.emoji}</Text>
-              <Text style={styles.merchName}>{item.name}</Text>
-              <Text style={styles.merchDesc} numberOfLines={2}>{item.description}</Text>
-              <View style={styles.merchFooter}>
-                <Text style={styles.merchPrice}>{item.price}</Text>
-                <View style={styles.shopBtn}>
-                  <Text style={styles.shopBtnText}>Shop →</Text>
-                </View>
-              </View>
+              <Text style={[styles.catText, category === cat && styles.catTextActive]}>
+                {cat}
+              </Text>
             </TouchableOpacity>
           ))}
+        </ScrollView>
+
+        {/* Count */}
+        <Text style={styles.countText}>{filtered.length} items</Text>
+
+        {/* Product grid */}
+        <View style={styles.grid}>
+          {filtered.map(item => <ShopCard key={item.id} item={item} />)}
         </View>
 
-        {/* FIFA Store banner */}
-        <TouchableOpacity
-          style={styles.storeBanner}
-          onPress={() => openLink('https://www.fifa.com/store', 'FIFA Store')}
-          activeOpacity={0.8}
-        >
-          <View style={{ flex: 1 }}>
-            <Text style={styles.storeBannerTitle}>⚽ FIFA Official Store</Text>
-            <Text style={styles.storeBannerSub}>Browse all 2026 World Cup gear</Text>
-          </View>
-          <Text style={styles.storeBannerArrow}>→</Text>
-        </TouchableOpacity>
+        {/* Affiliate programs CTA */}
+        <View style={styles.affiliateCard}>
+          <Text style={styles.affiliateTitle}>💰 Earn with every sale</Text>
+          <Text style={styles.affiliateDesc}>
+            We partner with Fanatics, Adidas, FIFA Store and StubHub.
+            Every purchase through this app earns us a small commission
+            at no extra cost to you.
+          </Text>
+        </View>
 
-        {/* Fanatics banner */}
-        <TouchableOpacity
-          style={[styles.storeBanner, { borderColor: 'rgba(239,68,68,0.3)' }]}
-          onPress={() => openLink('https://www.fanatics.com/soccer', 'Fanatics')}
-          activeOpacity={0.8}
-        >
-          <View style={{ flex: 1 }}>
-            <Text style={styles.storeBannerTitle}>👕 Fanatics</Text>
-            <Text style={styles.storeBannerSub}>National team jerseys & fan gear</Text>
-          </View>
-          <Text style={styles.storeBannerArrow}>→</Text>
-        </TouchableOpacity>
-
-        {/* Disclaimer */}
         <Text style={styles.disclaimer}>
-          This app may earn affiliate commission when you purchase through links above.
-          Prices shown are approximate and may vary.
+          Prices are approximate and may vary. Affiliate links may earn commission.
         </Text>
       </ScrollView>
     </SafeAreaView>
@@ -120,95 +137,85 @@ export default function EarnScreen() {
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: Colors.background },
-  scroll: { flex: 1 },
+  safe:    { flex: 1, backgroundColor: Colors.background },
+  scroll:  { flex: 1 },
   content: { padding: 12, paddingBottom: 32 },
-  header: { fontSize: 20, fontWeight: '800', color: '#fff', marginBottom: 14 },
+  header:  { fontSize: 22, fontWeight: '800', color: '#fff', marginBottom: 12 },
 
-  heroCard: {
+  // Featured banner
+  featured: {
     backgroundColor: Colors.surfaceAlt,
     borderRadius: Radius.lg,
-    padding: 20,
-    marginBottom: 20,
+    padding: 18,
+    marginBottom: 14,
+    flexDirection: 'row',
     alignItems: 'center',
     borderWidth: 1,
     borderColor: Colors.borderBlue,
   },
-  heroEmoji: { fontSize: 36, marginBottom: 8 },
-  heroTitle: { fontSize: 18, fontWeight: '800', color: '#fff', marginBottom: 8 },
-  heroDesc: {
-    color: Colors.textSecondary,
-    fontSize: 13,
-    textAlign: 'center',
-    lineHeight: 20,
-    marginBottom: 16,
-  },
-  prizeRow: { flexDirection: 'row', gap: 8, marginBottom: 16, width: '100%' },
-  prizeCard: {
-    flex: 1,
-    backgroundColor: Colors.background,
-    borderRadius: Radius.sm,
-    padding: 10,
-    alignItems: 'center',
-    gap: 4,
-  },
-  prizeRank: { fontSize: 20 },
-  prizeLabel: { color: Colors.textMuted, fontSize: 10 },
-  prizeAmount: { color: Colors.gold, fontSize: 15, fontWeight: '800' },
-  ctaBtn: {
-    backgroundColor: Colors.blue,
-    borderRadius: Radius.md,
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-    width: '100%',
-    alignItems: 'center',
-  },
-  ctaBtnText: { color: '#fff', fontWeight: '700', fontSize: 14 },
+  featuredLeft:      { flex: 1, gap: 6 },
+  featuredBadge:     { alignSelf: 'flex-start', backgroundColor: Colors.goldDim, borderRadius: Radius.full, paddingHorizontal: 10, paddingVertical: 3 },
+  featuredBadgeText: { color: Colors.gold, fontSize: 10, fontWeight: '700', letterSpacing: 1 },
+  featuredName:      { color: '#fff', fontSize: 16, fontWeight: '800' },
+  featuredDesc:      { color: Colors.textSecondary, fontSize: 12, lineHeight: 17 },
+  featuredCta:       { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 4 },
+  featuredPrice:     { color: Colors.green, fontSize: 15, fontWeight: '800' },
+  featuredBtn:       { backgroundColor: Colors.blue, borderRadius: Radius.sm, paddingHorizontal: 14, paddingVertical: 7 },
+  featuredBtnText:   { color: '#fff', fontWeight: '700', fontSize: 13 },
+  featuredEmoji:     { fontSize: 56, marginLeft: 10 },
 
-  sectionTitle: { fontSize: 16, fontWeight: '700', color: Colors.text, marginBottom: 4 },
-  sectionSub: { fontSize: 12, color: Colors.textSecondary, marginBottom: 12 },
+  // Category bar
+  catBar: { paddingVertical: 6, gap: 6, alignItems: 'center', flexDirection: 'row' },
+  catBtn: {
+    height: 32, paddingHorizontal: 16,
+    borderRadius: Radius.full,
+    borderWidth: 1, borderColor: Colors.border,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  catBtnActive: { borderColor: Colors.blue, backgroundColor: Colors.blueDim },
+  catText:      { fontSize: 13, color: Colors.textMuted },
+  catTextActive: { color: Colors.blueLight, fontWeight: '600' },
 
-  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 12 },
-  merch: {
+  countText: { fontSize: 11, color: Colors.textMuted, marginTop: 8, marginBottom: 10 },
+
+  // Grid
+  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  card: {
     width: '48.5%',
     backgroundColor: Colors.surface,
     borderRadius: Radius.md,
     padding: 14,
     borderWidth: 1,
     borderColor: Colors.border,
+    position: 'relative',
   },
-  merchEmoji: { fontSize: 32, marginBottom: 8 },
-  merchName: { color: Colors.text, fontSize: 13, fontWeight: '700', marginBottom: 4 },
-  merchDesc: { color: Colors.textSecondary, fontSize: 11, lineHeight: 16, marginBottom: 10, flex: 1 },
-  merchFooter: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  merchPrice: { color: Colors.green, fontSize: 13, fontWeight: '700' },
-  shopBtn: {
-    backgroundColor: Colors.blueDim,
-    borderRadius: Radius.sm,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
+  badge: {
+    position: 'absolute', top: 10, right: 10,
+    borderRadius: Radius.full,
+    paddingHorizontal: 7, paddingVertical: 2,
   },
-  shopBtnText: { color: Colors.blueLight, fontSize: 12, fontWeight: '600' },
+  badgeText:    { color: '#fff', fontSize: 9, fontWeight: '800', letterSpacing: 0.5 },
+  cardEmoji:    { fontSize: 34, marginBottom: 8 },
+  cardName:     { color: Colors.text, fontSize: 13, fontWeight: '700', marginBottom: 4, paddingRight: 36 },
+  cardDesc:     { color: Colors.textSecondary, fontSize: 11, lineHeight: 16, marginBottom: 10 },
+  cardFooter:   { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 6 },
+  cardPrice:    { color: Colors.green, fontSize: 14, fontWeight: '800' },
+  cardOriginal: { color: Colors.textMuted, fontSize: 11, textDecorationLine: 'line-through' },
+  shopBtn:      { backgroundColor: Colors.blueDim, borderRadius: Radius.sm, paddingHorizontal: 10, paddingVertical: 5 },
+  shopBtnText:  { color: Colors.blueLight, fontSize: 12, fontWeight: '600' },
+  storeName:    { fontSize: 10, color: Colors.textMuted },
 
-  storeBanner: {
+  // Affiliate info
+  affiliateCard: {
     backgroundColor: Colors.surface,
     borderRadius: Radius.md,
     padding: 16,
-    marginBottom: 8,
-    flexDirection: 'row',
-    alignItems: 'center',
+    marginTop: 14,
     borderWidth: 1,
-    borderColor: Colors.borderBlue,
+    borderColor: Colors.border,
   },
-  storeBannerTitle: { color: Colors.text, fontSize: 14, fontWeight: '700' },
-  storeBannerSub: { color: Colors.textSecondary, fontSize: 12, marginTop: 2 },
-  storeBannerArrow: { color: Colors.blueLight, fontSize: 20, fontWeight: '700' },
+  affiliateTitle: { color: Colors.text, fontSize: 14, fontWeight: '700', marginBottom: 6 },
+  affiliateDesc:  { color: Colors.textSecondary, fontSize: 12, lineHeight: 18 },
 
-  disclaimer: {
-    color: Colors.textMuted,
-    fontSize: 10,
-    textAlign: 'center',
-    marginTop: 12,
-    lineHeight: 16,
-  },
+  disclaimer: { color: Colors.textMuted, fontSize: 10, textAlign: 'center', marginTop: 12, lineHeight: 16 },
 });

@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>edtX — Mobile Apps</title>
+  <meta name="description" content="edtX builds mobile apps for sports fans. Home of Copa do Mundo 2026 — the ultimate FIFA World Cup companion app."/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:        #07111f;
+      --surface:   #0f1e35;
+      --surface2:  #162640;
+      --border:    rgba(255,255,255,0.07);
+      --blue:      #3b82f6;
+      --blue-light:#60a5fa;
+      --gold:      #f59e0b;
+      --green:     #22c55e;
+      --text:      #f1f5f9;
+      --muted:     #8a9cc0;
+      --faint:     #3d4f6e;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+    }
+
+    a { color: var(--blue-light); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    /* ── NAV ── */
+    nav {
+      position: sticky; top: 0; z-index: 100;
+      background: rgba(7,17,31,0.92);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 32px; height: 60px;
+    }
+    .nav-logo { font-size: 22px; font-weight: 800; color: var(--text); letter-spacing: -0.5px; }
+    .nav-logo span { color: var(--blue); }
+    .nav-links { display: flex; gap: 28px; list-style: none; }
+    .nav-links a { font-size: 14px; color: var(--muted); transition: color .2s; }
+    .nav-links a:hover { color: var(--text); text-decoration: none; }
+
+    /* ── SECTIONS ── */
+    section { padding: 80px 32px; max-width: 960px; margin: 0 auto; }
+    h2.section-title {
+      font-size: 32px; font-weight: 800; letter-spacing: -0.5px;
+      margin-bottom: 12px;
+    }
+    .section-sub { font-size: 16px; color: var(--muted); margin-bottom: 48px; }
+
+    /* ── HERO ── */
+    #home {
+      min-height: 88vh;
+      display: flex; flex-direction: column;
+      justify-content: center; padding-top: 60px;
+      max-width: 960px;
+    }
+    .hero-tag {
+      display: inline-block;
+      background: rgba(59,130,246,0.12);
+      color: var(--blue-light);
+      font-size: 12px; font-weight: 700; letter-spacing: 2px;
+      padding: 6px 14px; border-radius: 999px;
+      border: 1px solid rgba(59,130,246,0.25);
+      margin-bottom: 24px;
+    }
+    .hero-title {
+      font-size: clamp(40px, 7vw, 72px);
+      font-weight: 800; letter-spacing: -2px;
+      line-height: 1.08; margin-bottom: 20px;
+    }
+    .hero-title span { color: var(--blue); }
+    .hero-desc {
+      font-size: 18px; color: var(--muted);
+      max-width: 520px; line-height: 1.7; margin-bottom: 36px;
+    }
+    .hero-btns { display: flex; gap: 14px; flex-wrap: wrap; }
+    .btn {
+      display: inline-block; padding: 13px 28px; border-radius: 12px;
+      font-size: 15px; font-weight: 600; cursor: pointer; transition: opacity .2s;
+    }
+    .btn:hover { opacity: 0.88; text-decoration: none; }
+    .btn-primary { background: var(--blue); color: #fff; }
+    .btn-ghost {
+      background: transparent; color: var(--text);
+      border: 1px solid var(--border);
+    }
+
+    /* ── APPS ── */
+    #apps { border-top: 1px solid var(--border); }
+    .app-card {
+      display: flex; align-items: flex-start; gap: 32px;
+      background: var(--surface);
+      border-radius: 20px; padding: 32px;
+      border: 1px solid var(--border);
+      margin-bottom: 24px;
+      transition: border-color .2s;
+    }
+    .app-card:hover { border-color: rgba(59,130,246,0.35); }
+    .app-icon {
+      width: 80px; height: 80px; border-radius: 18px;
+      background: linear-gradient(135deg, #0E1D45, #071028);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 38px; flex-shrink: 0;
+      border: 1px solid rgba(59,130,246,0.2);
+    }
+    .app-info { flex: 1; }
+    .app-name { font-size: 20px; font-weight: 800; margin-bottom: 6px; }
+    .app-desc { color: var(--muted); font-size: 15px; line-height: 1.6; margin-bottom: 16px; }
+    .app-tags { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 20px; }
+    .tag {
+      background: rgba(59,130,246,0.1); color: var(--blue-light);
+      font-size: 12px; font-weight: 600; padding: 4px 12px;
+      border-radius: 999px; border: 1px solid rgba(59,130,246,0.2);
+    }
+    .tag-gold {
+      background: rgba(245,158,11,0.1); color: var(--gold);
+      border-color: rgba(245,158,11,0.2);
+    }
+    .app-links { display: flex; gap: 12px; flex-wrap: wrap; }
+    .app-store-btn {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: var(--surface2); border: 1px solid var(--border);
+      padding: 10px 18px; border-radius: 10px;
+      font-size: 13px; font-weight: 600; color: var(--text);
+      transition: background .2s;
+    }
+    .app-store-btn:hover { background: #1e3a5f; text-decoration: none; }
+    .coming-soon {
+      background: transparent; color: var(--faint);
+      border: 1px dashed var(--faint);
+      padding: 10px 18px; border-radius: 10px; font-size: 13px;
+    }
+
+    /* ── ABOUT ── */
+    #about { border-top: 1px solid var(--border); }
+    .about-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; }
+    .about-stat {
+      background: var(--surface);
+      border-radius: 14px; padding: 24px;
+      border: 1px solid var(--border);
+      text-align: center;
+    }
+    .about-stat-num { font-size: 36px; font-weight: 800; color: var(--blue-light); }
+    .about-stat-label { font-size: 13px; color: var(--muted); margin-top: 4px; }
+
+    /* ── PRIVACY ── */
+    #privacy { border-top: 1px solid var(--border); }
+    .privacy-body {
+      background: var(--surface); border-radius: 16px;
+      padding: 36px; border: 1px solid var(--border);
+    }
+    .privacy-body h3 { font-size: 16px; margin: 28px 0 8px; color: var(--blue-light); }
+    .privacy-body h3:first-child { margin-top: 0; }
+    .privacy-body p, .privacy-body li {
+      font-size: 14px; color: var(--muted); line-height: 1.75;
+    }
+    .privacy-body ul { padding-left: 20px; margin-top: 6px; }
+    .privacy-body li { margin-bottom: 4px; }
+    .privacy-updated {
+      font-size: 12px; color: var(--faint); margin-bottom: 24px;
+    }
+
+    /* ── CONTACT ── */
+    #contact { border-top: 1px solid var(--border); text-align: center; }
+    .contact-email {
+      font-size: 20px; font-weight: 700; color: var(--blue-light);
+    }
+
+    /* ── FOOTER ── */
+    footer {
+      border-top: 1px solid var(--border);
+      padding: 28px 32px;
+      display: flex; justify-content: space-between; align-items: center;
+      flex-wrap: wrap; gap: 12px;
+      font-size: 13px; color: var(--faint);
+      max-width: 960px; margin: 0 auto;
+    }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 640px) {
+      nav { padding: 0 16px; }
+      .nav-links { gap: 16px; }
+      section { padding: 60px 16px; }
+      .app-card { flex-direction: column; gap: 16px; }
+      footer { flex-direction: column; text-align: center; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <div class="nav-logo">edt<span>X</span></div>
+  <ul class="nav-links">
+    <li><a href="#apps">Apps</a></li>
+    <li><a href="#about">About</a></li>
+    <li><a href="#privacy">Privacy</a></li>
+    <li><a href="#contact">Contact</a></li>
+  </ul>
+</nav>
+
+<!-- HERO -->
+<section id="home">
+  <div class="hero-tag">INDIE APP STUDIO</div>
+  <h1 class="hero-title">Apps built for<br/><span>sports fans.</span></h1>
+  <p class="hero-desc">edtX builds clean, fast mobile apps for iOS. We focus on sports, live data and experiences that fans actually want.</p>
+  <div class="hero-btns">
+    <a href="#apps" class="btn btn-primary">See Our Apps</a>
+    <a href="#contact" class="btn btn-ghost">Get in Touch</a>
+  </div>
+</section>
+
+<!-- APPS -->
+<section id="apps">
+  <p class="section-sub" style="margin-bottom:32px;">Our apps — built with care, designed for iPhone.</p>
+
+  <div class="app-card">
+    <div class="app-icon">⚽</div>
+    <div class="app-info">
+      <div class="app-name">Copa do Mundo 2026</div>
+      <p class="app-desc">
+        Your complete companion for the FIFA World Cup 2026. Live scores updated every 30 seconds,
+        full schedule for all 104 matches, group standings for all 48 teams,
+        a global prediction game with leaderboard prizes, and official merchandise in one place.
+      </p>
+      <div class="app-tags">
+        <span class="tag">Sports</span>
+        <span class="tag">Live Scores</span>
+        <span class="tag">FIFA 2026</span>
+        <span class="tag tag-gold">Free + Premium</span>
+      </div>
+      <div class="app-links">
+        <a href="https://apps.apple.com/app/copamundo2026" class="app-store-btn" target="_blank">
+          🍎 App Store
+        </a>
+        <a href="#privacy" class="app-store-btn">🔒 Privacy Policy</a>
+      </div>
+    </div>
+  </div>
+
+  <div class="app-card" style="opacity:0.5;">
+    <div class="app-icon" style="font-size:32px;">🔜</div>
+    <div class="app-info">
+      <div class="app-name">More apps coming</div>
+      <p class="app-desc">We're always building. Follow us or check back after the World Cup.</p>
+      <div class="app-links">
+        <span class="coming-soon">Coming Soon</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ABOUT -->
+<section id="about">
+  <h2 class="section-title">About edtX</h2>
+  <p class="section-sub">Independent app studio focused on sports and live data experiences for iPhone.</p>
+  <div class="about-grid">
+    <div class="about-stat">
+      <div class="about-stat-num">1</div>
+      <div class="about-stat-label">App on the Store</div>
+    </div>
+    <div class="about-stat">
+      <div class="about-stat-num">48</div>
+      <div class="about-stat-label">Teams tracked</div>
+    </div>
+    <div class="about-stat">
+      <div class="about-stat-num">104</div>
+      <div class="about-stat-label">Matches covered</div>
+    </div>
+    <div class="about-stat">
+      <div class="about-stat-num">0</div>
+      <div class="about-stat-label">Ads. Ever.</div>
+    </div>
+  </div>
+</section>
+
+<!-- PRIVACY -->
+<section id="privacy">
+  <h2 class="section-title">Privacy Policy</h2>
+  <p class="section-sub">Copa do Mundo 2026 — Privacy Policy</p>
+
+  <div class="privacy-body">
+    <p class="privacy-updated">Last updated: June 2, 2026</p>
+
+    <p>This Privacy Policy describes how Copa do Mundo 2026 ("we", "our", or "the app") collects, uses and protects information when you use our iOS application.</p>
+
+    <h3>1. Information We Collect</h3>
+    <p>We collect the minimum data needed to operate the app:</p>
+    <ul>
+      <li><strong style="color:#f1f5f9;">Anonymous user ID:</strong> A randomly generated identifier created on your device at first launch. Never linked to your name, email or any personal information.</li>
+      <li><strong style="color:#f1f5f9;">Display name:</strong> An optional nickname for the prediction leaderboard. You can use the auto-generated name or pick your own. Never tied to your real identity.</li>
+      <li><strong style="color:#f1f5f9;">Predictions:</strong> The match outcomes you predict within the app. Stored alongside your anonymous ID to compute leaderboard scores.</li>
+      <li><strong style="color:#f1f5f9;">Purchase status:</strong> Whether you have an active Premium subscription, managed by RevenueCat. We never store payment details — all billing is handled by Apple.</li>
+    </ul>
+
+    <h3>2. Information We Do Not Collect</h3>
+    <ul>
+      <li>Your name, email address or phone number</li>
+      <li>Your location</li>
+      <li>Your camera, microphone or contacts</li>
+      <li>Browsing history outside the app</li>
+      <li>Any data from merchandise or ticket links (those open in an external browser)</li>
+    </ul>
+
+    <h3>3. How We Use Your Information</h3>
+    <ul>
+      <li>To display your prediction picks and points on the leaderboard</li>
+      <li>To process and restore your Premium subscription</li>
+      <li>To improve performance and fix bugs via anonymous crash reports</li>
+    </ul>
+
+    <h3>4. Third-Party Services</h3>
+    <ul>
+      <li><strong style="color:#f1f5f9;">Google Firebase / Firestore</strong> — stores anonymous predictions and leaderboard data. <a href="https://firebase.google.com/support/privacy" target="_blank">Firebase Privacy Policy</a></li>
+      <li><strong style="color:#f1f5f9;">RevenueCat</strong> — manages in-app subscriptions. No payment data is shared with us. <a href="https://www.revenuecat.com/privacy" target="_blank">RevenueCat Privacy Policy</a></li>
+      <li><strong style="color:#f1f5f9;">API-Football (RapidAPI)</strong> — provides live match scores. No user data is sent to this service. <a href="https://rapidapi.com/privacy" target="_blank">RapidAPI Privacy Policy</a></li>
+    </ul>
+
+    <h3>5. Affiliate Links</h3>
+    <p>The Shop tab contains links to third-party retailers (Fanatics, Adidas, FIFA Store, StubHub). When you tap a link, you're taken to an external website. We may earn a small affiliate commission on qualifying purchases. We receive no personal information about your purchases.</p>
+
+    <h3>6. Data Retention</h3>
+    <p>Your anonymous ID and predictions are stored until you delete the app or request deletion. To delete your data, email us and we will remove your records within 30 days.</p>
+
+    <h3>7. Children's Privacy</h3>
+    <p>The app is not directed at children under 13. We do not knowingly collect data from anyone under 13. If you believe a child has provided data through the app, contact us and we will delete it promptly.</p>
+
+    <h3>8. Changes to This Policy</h3>
+    <p>We may update this Privacy Policy from time to time. The "Last updated" date at the top will reflect any changes. Continued use of the app after changes constitutes acceptance.</p>
+
+    <h3>9. Contact</h3>
+    <p>Questions about this policy? Email us at <a href="mailto:edtx.dev@gmail.com">edtx.dev@gmail.com</a></p>
+  </div>
+</section>
+
+<!-- CONTACT -->
+<section id="contact">
+  <h2 class="section-title">Get in Touch</h2>
+  <p class="section-sub">Questions, feedback or partnership inquiries.</p>
+  <a href="edtx.dev@gmail.com class="contact-email">edtx.dev@gmail.com</a>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <span>© 2026 edtX. All rights reserved.</span>
+  <span><a href="#privacy">Privacy Policy</a> · <a href="#contact">Contact</a></span>
+</footer>
+
+</body>
+</html>

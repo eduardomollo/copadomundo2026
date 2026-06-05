@@ -20,18 +20,26 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Match, STATIC_MATCHES } from '../constants/data';
 
-const RAPIDAPI_KEY = '946836b315msh84f41ceada207a5p1a8548jsn34ecb817007c'; // ← Replace this
-const BASE_URL = 'https://api-football-v1.p.rapidapi.com/v3';
+/**
+ * HOW TO GET A FREE API KEY (different from RapidAPI):
+ * 1. Go to https://dashboard.api-football.com/register
+ * 2. Create a free account (100 requests/day free)
+ * 3. Copy your API key from the dashboard
+ * 4. Paste it below as API_SPORTS_KEY
+ *
+ * For live scores during matches, upgrade to the Pro plan ($19/month).
+ */
+const API_SPORTS_KEY = '0effd043c0148a07df2cd660eb37c54f'; // ← register at dashboard.api-football.com
+const BASE_URL = 'https://v3.football.api-sports.io';
 const WC_LEAGUE_ID = 1;
 const WC_SEASON = 2026;
 
-const CACHE_TTL_LIVE = 30 * 1000;       // 30s for live matches
-const CACHE_TTL_UPCOMING = 5 * 60 * 1000; // 5min for upcoming
-const CACHE_TTL_STANDINGS = 10 * 60 * 1000; // 10min for standings
+const CACHE_TTL_LIVE = 30 * 1000;
+const CACHE_TTL_UPCOMING = 5 * 60 * 1000;
+const CACHE_TTL_STANDINGS = 10 * 60 * 1000;
 
 const headers = {
-  'X-RapidAPI-Key': RAPIDAPI_KEY,
-  'X-RapidAPI-Host': 'api-football-v1.p.rapidapi.com',
+  'x-apisports-key': API_SPORTS_KEY,
 };
 
 // ── CACHE ────────────────────────────────────────────────────────────────────
@@ -80,8 +88,7 @@ function mapStatus(short: string): 'upcoming' | 'live' | 'finished' {
  * Falls back to static data if the API key is not set or the request fails.
  */
 export async function fetchMatches(): Promise<Match[]> {
-  if (RAPIDAPI_KEY === 'YOUR_RAPIDAPI_KEY') {
-    // No key yet — return static schedule
+  if (API_SPORTS_KEY === 'YOUR_API_SPORTS_KEY') {
     return STATIC_MATCHES;
   }
 
@@ -135,7 +142,7 @@ export async function fetchMatches(): Promise<Match[]> {
  * Fetch live match detail for a single fixture (used for live score polling).
  */
 export async function fetchLiveFixture(fixtureId: number): Promise<Partial<Match> | null> {
-  if (RAPIDAPI_KEY === 'YOUR_RAPIDAPI_KEY') return null;
+  if (API_SPORTS_KEY === 'YOUR_API_SPORTS_KEY') return null;
 
   try {
     const json = await apiFetch('fixtures', { id: fixtureId, live: 'all' });
@@ -157,7 +164,7 @@ export async function fetchLiveFixture(fixtureId: number): Promise<Partial<Match
  * Fetch group standings.
  */
 export async function fetchStandings(): Promise<Record<string, GroupTeamStat[]>> {
-  if (RAPIDAPI_KEY === 'YOUR_RAPIDAPI_KEY') return {};
+  if (API_SPORTS_KEY === 'YOUR_API_SPORTS_KEY') return {};
 
   const cacheKey = 'wc2026_standings';
   const cached = await getCached<Record<string, GroupTeamStat[]>>(cacheKey, CACHE_TTL_STANDINGS);

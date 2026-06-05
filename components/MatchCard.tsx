@@ -11,10 +11,22 @@ type Props = {
   showPredictControls?: boolean;
 };
 
+function localDateTime(match: Match): { date: string; time: string } {
+  if (match.utcDate) {
+    const d = new Date(match.utcDate);
+    return {
+      date: d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+      time: d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }),
+    };
+  }
+  return { date: match.date, time: match.time };
+}
+
 export function MatchCard({ match, prediction, onPredict, showPredictControls }: Props) {
   const isLive = match.status === 'live';
   const isFinished = match.status === 'finished';
   const showScore = isLive || isFinished;
+  const { date: localDate, time: localTime } = localDateTime(match);
 
   return (
     <View style={styles.card}>
@@ -61,7 +73,7 @@ export function MatchCard({ match, prediction, onPredict, showPredictControls }:
 
       {/* Meta */}
       <View style={styles.meta}>
-        <Text style={styles.metaText}>📅 {match.date}  ·  {match.time}</Text>
+        <Text style={styles.metaText}>📅 {localDate}  ·  {localTime}</Text>
         <Text style={styles.metaText}>📍 {match.venue}</Text>
       </View>
 
