@@ -72,12 +72,9 @@ export default function PredictScreen() {
 
     if (!isPremium && !predictions[matchId] && predictionCount >= FREE_LIMIT) {
       Alert.alert(
-        '🏆 Upgrade to Premium',
-        `Free plan allows ${FREE_LIMIT} predictions. Upgrade for unlimited picks + leaderboard prizes.`,
-        [
-          { text: 'Not now', style: 'cancel' },
-          { text: 'Upgrade $4.99/mo', onPress: handlePurchase },
-        ],
+        'Pick limit reached',
+        `You've used your ${FREE_LIMIT} free picks for this round. More picks coming in a future update!`,
+        [{ text: 'OK' }],
       );
       return;
     }
@@ -180,31 +177,21 @@ export default function PredictScreen() {
           </View>
         )}
 
-        {/* Premium upsell */}
-        {!isPremium && (
-          <View style={styles.upsellCard}>
-            <Text style={styles.upsellEmoji}>🏆</Text>
-            <Text style={styles.upsellTitle}>Go Premium</Text>
-            <Text style={styles.upsellDesc}>
-              Unlimited predictions · Expert pre-match tips · Real leaderboard prizes up to $500
-            </Text>
-            <View style={styles.prizeRow}>
-              {['🥇 $500', '🥈 $200', '🥉 $100'].map(p => (
-                <View key={p} style={styles.prizePill}>
-                  <Text style={styles.prizePillText}>{p}</Text>
-                </View>
-              ))}
-            </View>
-            <TouchableOpacity style={styles.upgradeBtn} onPress={handlePurchase} disabled={purchasing}>
-              <Text style={styles.upgradeBtnText}>
-                {purchasing ? 'Processing…' : 'Upgrade — $4.99/month'}
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity onPress={handleRestore}>
-              <Text style={styles.restoreText}>Restore purchase</Text>
-            </TouchableOpacity>
+        {/* Info card */}
+        <View style={styles.upsellCard}>
+          <Text style={styles.upsellEmoji}>🎯</Text>
+          <Text style={styles.upsellTitle}>How It Works</Text>
+          <Text style={styles.upsellDesc}>
+            Pick the outcome of each match before kickoff. Earn points for every correct prediction and climb the global leaderboard!
+          </Text>
+          <View style={styles.prizeRow}>
+            {['10pts correct', '5pts draw', 'Bonus streaks'].map(p => (
+              <View key={p} style={styles.prizePill}>
+                <Text style={styles.prizePillText}>{p}</Text>
+              </View>
+            ))}
           </View>
-        )}
+        </View>
 
         {/* Leaderboard */}
         <Text style={styles.sectionTitle}>

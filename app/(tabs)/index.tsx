@@ -45,7 +45,7 @@ export default function HomeScreen() {
         {/* Hero */}
         <View style={styles.hero}>
           <Text style={styles.heroEmoji}>⚽</Text>
-          <Text style={styles.heroTitle}>Copa do Mundo 2026</Text>
+          <Text style={styles.heroTitle}>World Cup 2026</Text>
           <Text style={styles.heroSub}>USA  ·  Canada  ·  Mexico</Text>
 
           {countdown.started ? (

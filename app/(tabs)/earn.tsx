@@ -122,7 +122,7 @@ export default function ShopScreen() {
         <View style={styles.affiliateCard}>
           <Text style={styles.affiliateTitle}>💰 Earn with every sale</Text>
           <Text style={styles.affiliateDesc}>
-            We partner with Fanatics, Adidas, FIFA Store and StubHub.
+            We partner with Fanatics, Adidas, Official Store and StubHub.
             Every purchase through this app earns us a small commission
             at no extra cost to you.
           </Text>

@@ -15,7 +15,7 @@
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.edtx.worldcup2026",
-      "buildNumber": "10",
+      "buildNumber": "11",
       "deploymentTarget": "15.1",
       "infoPlist": {
         "NSAppTransportSecurity": {
@@ -25,7 +25,8 @@
       }
     },
     "plugins": [
-      "expo-router"
+      "expo-router",
+      "./plugins/withFmtFix"
     ],
     "experiments": {
       "typedRoutes": true
