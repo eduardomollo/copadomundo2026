@@ -1,10 +1,9 @@
 /**
  * Fixes Xcode 26 / clang 18 fmt consteval error in React Native 0.79.x.
  *
- * Root cause: fmt/format-inl.h uses FMT_STRING() which creates consteval
- * objects that clang 18 refuses to compile. Fix: override FMT_STRING to
- * use fmt::runtime() which forces runtime string handling, bypassing
- * the consteval code path entirely.
+ * fmt/base.h defines FMT_USE_CONSTEVAL=1 when __cpp_consteval is available.
+ * Clang 18 (Xcode 26) is stricter about consteval, causing build failures.
+ * Fix: patch base.h to force FMT_USE_CONSTEVAL=0, disabling consteval usage.
  */
 const { withDangerousMod } = require('@expo/config-plugins');
 const fs = require('fs');
@@ -18,24 +17,24 @@ const withFmtFix = (config) =>
       if (!fs.existsSync(podfilePath)) return config;
 
       let podfile = fs.readFileSync(podfilePath, 'utf8');
-      if (podfile.includes('fmt_fix_patch')) return config;
+      if (podfile.includes('fmt_base_patch')) return config;
 
       const patch = `
-  # fmt_fix_patch: override FMT_STRING macro to bypass consteval in clang 18
-  fmt_inl = File.join(installer.sandbox.root, 'fmt', 'include', 'fmt', 'format-inl.h')
-  if File.exist?(fmt_inl)
-    content = File.read(fmt_inl)
-    unless content.include?('fmt_patched_v2')
-      # Override FMT_STRING to use fmt::runtime() — avoids consteval entirely
-      header = <<~PATCH
-        // fmt_patched_v2 - Xcode 26 clang 18 fix
-        #ifdef FMT_STRING
-        #undef FMT_STRING
-        #endif
-        #define FMT_STRING(s) fmt::runtime(s)
-      PATCH
-      File.write(fmt_inl, header + content)
-      puts "[fmt_patch] Patched #{fmt_inl}"
+  # fmt_base_patch: force FMT_USE_CONSTEVAL=0 in fmt/base.h
+  # base.h redefines FMT_USE_CONSTEVAL=1 based on __cpp_consteval detection,
+  # overriding any -D flag. We patch the source directly.
+  [
+    File.join(installer.sandbox.root, 'fmt', 'include', 'fmt', 'base.h'),
+    File.join(installer.sandbox.root, 'fmt', 'include', 'fmt', 'core.h'),
+  ].each do |f|
+    next unless File.exist?(f)
+    content = File.read(f)
+    next if content.include?('fmt_base_patched')
+    # Replace any line that sets FMT_USE_CONSTEVAL to 1
+    patched = content.gsub(/define\\s+FMT_USE_CONSTEVAL\\s+1/, 'define FMT_USE_CONSTEVAL 0 // fmt_base_patched')
+    if patched != content
+      File.write(f, patched)
+      puts "[fmt_patch] Patched #{f}"
     end
   end`;
 
